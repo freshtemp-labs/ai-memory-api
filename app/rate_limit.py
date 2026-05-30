@@ -6,6 +6,11 @@ from app.database import get_connection
 from app.config import settings
 
 
+def _utc_now() -> datetime:
+    """Return a timezone-aware UTC datetime for consistent comparisons."""
+    return datetime.now(timezone.utc)
+
+
 def check_rate_limit(user_id: str, tier: str) -> tuple[bool, str]:
     """Check if a user is within their rate limit.
 
@@ -26,8 +31,14 @@ def check_rate_limit(user_id: str, tier: str) -> tuple[bool, str]:
         conn.close()
         return True, ""  # Unlimited
 
-    now = datetime.now(timezone.utc)
-    reset_time = datetime.fromisoformat(user["request_reset"])
+    now = _utc_now()
+    reset_time_str = user["request_reset"]
+    if reset_time_str is None:
+        reset_time = _utc_now()
+    else:
+        reset_time = datetime.fromisoformat(reset_time_str)
+        if reset_time.tzinfo is None:
+            reset_time = reset_time.replace(tzinfo=timezone.utc)
 
     # Check if we should reset the counter
     reset = False
@@ -47,7 +58,7 @@ def check_rate_limit(user_id: str, tier: str) -> tuple[bool, str]:
     if reset:
         conn.execute(
             "UPDATE users SET request_count = 0, request_reset = ? WHERE id = ?",
-            (now.strftime("%Y-%m-%d %H:%M:%S"), user_id),
+            (now.strftime("%Y-%m-%d %H:%M:%S+00:00"), user_id),
         )
         conn.commit()
 

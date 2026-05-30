@@ -1,9 +1,12 @@
 """Semantic search over memories using vector similarity."""
 
 import asyncio
+import logging
 from app.database import get_connection, deserialize_vector
 from app.embeddings import embed_single, cosine_similarity
 from app.models import SearchMemoryRequest, SearchResult, MemoryResponse
+
+logger = logging.getLogger(__name__)
 
 
 async def search_memories(
@@ -18,7 +21,8 @@ async def search_memories(
     # Try semantic search first
     try:
         query_vector = await embed_single(req.query)
-    except Exception:
+    except Exception as exc:
+        logger.warning("embed_single failed in search for agent %s: %s", agent_id, exc)
         # Fallback to keyword search
         return _keyword_search(agent_id, user_id, req)
 

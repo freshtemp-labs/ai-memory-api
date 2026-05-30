@@ -4,9 +4,12 @@ Returns a formatted string suitable for injection into an LLM prompt.
 """
 
 import asyncio
+import logging
 from app.database import get_connection, deserialize_vector
 from app.embeddings import embed_single, cosine_similarity
 from app.models import ContextInjectRequest, MemoryResponse
+
+logger = logging.getLogger(__name__)
 
 
 async def inject_context(
@@ -78,7 +81,8 @@ async def _get_relevant_memories(
 
             scored.sort(key=lambda x: x[0], reverse=True)
             rows = [r for _, r in scored[:limit]]
-    except Exception:
+    except Exception as exc:
+        logger.warning("vector search failed in context injection for agent %s: %s", agent_id, exc)
         # Fallback to recent memories
         rows = conn.execute(
             """SELECT * FROM memories

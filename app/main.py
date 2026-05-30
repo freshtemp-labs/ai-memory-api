@@ -22,6 +22,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.config import settings
 from app.database import init_db
+from app.middleware import AuthMiddleware
 from app.models import (
     CreateUserRequest, CreateAgentRequest,
     StoreMemoryRequest, SearchMemoryRequest,
@@ -60,6 +61,9 @@ app = FastAPI(
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Auth middleware — validates API keys and enforces rate limits on every request
+app.add_middleware(AuthMiddleware)
 
 
 # --- Auth Dependency ---

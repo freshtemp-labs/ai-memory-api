@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 from app.database import init_db
+from app.config import settings
 
 client = TestClient(app)
 
@@ -193,3 +194,52 @@ class TestContext:
         assert resp.status_code == 200
         assert "context" in resp.json()
         assert "concise" in resp.json()["context"].lower()
+
+
+class TestRateLimit:
+    """Rate limiting integration tests."""
+
+    def test_free_tier_exceeded(self, auth_header):
+        """Free tier should return 429 when request limit is exceeded."""
+        # Temporarily lower free tier limit to 1
+        original = settings.free_tier_limit
+        settings.free_tier_limit = 1
+        try:
+            # First request succeeds
+            resp = client.post(
+                "/agents/test-agent/memories",
+                json={"content": "Memory one"},
+                headers=auth_header,
+            )
+            assert resp.status_code == 200
+
+            # Second request is rate limited
+            resp = client.post(
+                "/agents/test-agent/memories",
+                json={"content": "Memory two"},
+                headers=auth_header,
+            )
+            assert resp.status_code == 429
+            assert "rate limit" in resp.json()["error"].lower()
+        finally:
+            settings.free_tier_limit = original
+
+    def test_pro_tier_unlimited(self, user, auth_header):
+        """Pro tier users should never be rate limited."""
+        from app.database import get_connection
+
+        conn = get_connection()
+        conn.execute(
+            "UPDATE users SET tier = 'pro', request_count = 0 WHERE api_key = ?",
+            (user["api_key"],),
+        )
+        conn.commit()
+        conn.close()
+
+        for i in range(5):
+            resp = client.post(
+                "/agents/test-agent/memories",
+                json={"content": f"Pro memory {i}"},
+                headers=auth_header,
+            )
+            assert resp.status_code == 200, f"Request {i} failed: {resp.json()}"

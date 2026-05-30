@@ -8,7 +8,7 @@ from app.rate_limit import check_rate_limit
 
 
 # Public endpoints that don't need authentication
-PUBLIC_PATHS = {"/", "/health", "/docs", "/openapi.json", "/redoc"}
+PUBLIC_PATHS = {"/", "/health", "/docs", "/openapi.json", "/redoc", "/users"}
 
 
 class AuthMiddleware(BaseHTTPMiddleware):

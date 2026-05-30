@@ -1,10 +1,13 @@
 """Memory CRUD operations — store, retrieve, list, delete."""
 
+import logging
 import uuid
 from datetime import datetime, timezone
 from app.database import get_connection, serialize_vector, deserialize_vector
 from app.embeddings import embed_single
 from app.models import StoreMemoryRequest, MemoryResponse
+
+logger = logging.getLogger(__name__)
 
 
 def gen_memory_id() -> str:
@@ -155,5 +158,5 @@ async def embed_and_store(memory_id: str, content: str):
         )
         conn.commit()
         conn.close()
-    except Exception:
-        pass  # Embedding failure is non-fatal
+    except Exception as exc:
+        logger.warning("embed_and_store failed for memory %s: %s", memory_id, exc)

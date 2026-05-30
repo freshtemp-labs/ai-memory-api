@@ -16,7 +16,7 @@ Hosted memory service for AI Agents — store, search, compress, and inject memo
 
 ```bash
 # Clone
-git clone https://github.com/billbtbillb-ui/ai-memory-api.git
+git clone https://github.com/freshtemp-labs/ai-memory-api.git
 cd ai-memory-api
 
 # Set up environment

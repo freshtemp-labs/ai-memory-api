@@ -1,7 +1,7 @@
 """Pydantic models for the Memory API."""
 
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 from pydantic import BaseModel, Field
 import uuid
 
@@ -14,7 +14,7 @@ def gen_id() -> str:
 
 class CreateUserRequest(BaseModel):
     user_id: str = Field(default_factory=gen_id)
-    tier: str = "free"  # free, basic, pro
+    tier: Literal["free", "basic", "pro"] = "free"
 
 
 class CreateAgentRequest(BaseModel):
